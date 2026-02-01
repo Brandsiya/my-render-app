@@ -1,0 +1,24 @@
+{
+  "name": "my-render-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brandsiya/my-render-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Brandsiya/my-render-app/issues"
+  },
+  "homepage": "https://github.com/Brandsiya/my-render-app#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "description": ""
+}
