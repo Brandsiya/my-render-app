@@ -1,10 +1,12 @@
-#!/bin/bash
-# test_tier4_decisions.sh - Test single decisions for Tier-4 API v3
-
-if [ -z "$TIER4_URL" ]; then
-  echo "Please export TIER4_URL first, e.g. export TIER4_URL=http://localhost:3000"
-  exit 1
-fi
+# paste above content
+nano test_tier4_batch.sh
+# paste above content
+chmod +x test_tier4_decisions.sh test_tier4_batch.sh
+node server.js &  # start the server
+export TIER4_URL="http://localhost:3000"
+./test_tier4_decisions.sh
+./test_tier4_batch.sh#!/bin/bash
+# Test single decision endpoint for Tier-4 v3
 
 echo "=== Testing Tier-4 Decision Endpoint ==="
 
