@@ -21,7 +21,16 @@ app.get('/', (req, res) => {
     status: 'running'
   });
 });
-
+// Versioned health endpoint
+app.get('/v1/health', (req, res) => {
+  res.json({
+    service: 'SeekReap',
+    tier: 4,
+    version: 'v1',
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
 /**
  * Versioned health endpoint
  * Purpose: Machine health check for orchestration & monitoring
