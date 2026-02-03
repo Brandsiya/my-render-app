@@ -1,71 +1,95 @@
-// server.js
+// server.js - Tier-4 API v3
 const express = require('express');
-const app = express();
-const port = process.env.PORT || 3000;
+const bodyParser = require('body-parser');
 
-app.use(express.json());
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(bodyParser.json());
 
 // In-memory logs
-let logs = [];
-let decisionCounts = { approved: 0, rejected: 0, pending: 0, escalate: 0, review: 0 };
+const logs = [];
 
-// Health endpoint
+// Decision logic function
+function getDecision(input) {
+  let decision;
+
+  // Custom rules
+  if (input.length > 50) {
+    decision = "review"; // long inputs automatically reviewed
+  } else if (input.toLowerCase().includes("urgent")) {
+    decision = "escalate"; // urgent inputs escalate
+  } else if (input.toLowerCase().includes("approve")) {
+    decision = "approved";
+  } else if (input.toLowerCase().includes("reject")) {
+    decision = "rejected";
+  } else if (input.toLowerCase().includes("hold")) {
+    decision = "pending";
+  } else {
+    decision = "pending"; // default fallback
+  }
+
+  const logEntry = {
+    service: "SeekReap",
+    tier: 4,
+    version: "v3",
+    status: "success",
+    input,
+    decision,
+    timestamp: new Date().toISOString()
+  };
+
+  // Save log
+  logs.push(logEntry);
+  return logEntry;
+}
+
+// Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ service: "SeekReap", tier: 4, status: "healthy", timestamp: new Date().toISOString() });
+  res.json({
+    service: "SeekReap",
+    tier: 4,
+    status: "healthy",
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Single decision endpoint
 app.post('/v1/decision', (req, res) => {
   const { input } = req.body;
-  if (!input) return res.status(400).json({ status: "error", message: "Missing input" });
+  if (!input) return res.status(400).json({ error: "Input is required" });
 
-  const decision = getDecision(input);
-
-  const result = { service: "SeekReap", tier: 4, version: "v3", status: "success", input, decision, timestamp: new Date().toISOString() };
-  
-  logs.push(result);
-  decisionCounts[decision] += 1;
-
+  const result = getDecision(input);
   res.json(result);
 });
 
 // Batch decision endpoint
 app.post('/v1/decision/batch', (req, res) => {
   const { inputs } = req.body;
-  if (!inputs || !Array.isArray(inputs)) return res.status(400).json({ status: "error", message: "Invalid inputs" });
+  if (!inputs || !Array.isArray(inputs)) return res.status(400).json({ error: "Array of inputs is required" });
 
-  const results = inputs.map(input => {
-    const decision = getDecision(input);
-    const r = { input, decision, timestamp: new Date().toISOString() };
-    logs.push(r);
-    decisionCounts[decision] += 1;
-    return r;
+  const results = inputs.map(getDecision);
+  res.json({
+    service: "SeekReap",
+    tier: 4,
+    version: "v3",
+    status: "success",
+    results
   });
-
-  res.json({ service: "SeekReap", tier: 4, version: "v3", status: "success", results });
 });
 
 // Logs endpoint
 app.get('/v1/logs', (req, res) => {
-  res.json({ service: "SeekReap", tier: 4, version: "v3", status: "success", count: logs.length, logs });
+  res.json({
+    service: "SeekReap",
+    tier: 4,
+    version: "v3",
+    status: "success",
+    count: logs.length,
+    logs
+  });
 });
 
-// Metrics endpoint
-app.get('/v1/metrics', (req, res) => {
-  res.json({ service: "SeekReap", tier: 4, version: "v3", status: "success", counts: decisionCounts });
-});
-
-// Decision logic
-function getDecision(input) {
-  const text = input.toLowerCase();
-  if (text.includes("approve")) return "approved";
-  if (text.includes("reject")) return "rejected";
-  if (text.includes("urgent") || text.includes("escalate")) return "escalate";
-  if (text.includes("hold")) return "pending";
-  if (text.length > 50) return "review"; // new rule: long inputs go to review
-  return "pending";
-}
-
-app.listen(port, () => {
-  console.log(`Server running on http://0.0.0.0:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
