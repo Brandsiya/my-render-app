@@ -1,50 +1,53 @@
 const express = require('express');
 const app = express();
 
-/**
- * Render provides PORT dynamically.
- * Binding to 0.0.0.0 is required.
- */
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
+// Middleware to parse JSON bodies
 app.use(express.json());
 
-/**
- * Root endpoint
- * Purpose: Render health + human sanity check
- * DO NOT REMOVE
- */
+// Health endpoint
 app.get('/', (req, res) => {
   res.json({
-    service: 'SeekReap Tier-4 API',
-    status: 'running'
-  });
-});
-// Versioned health endpoint
-app.get('/v1/health', (req, res) => {
-  res.json({
-    service: 'SeekReap',
+    service: "SeekReap",
     tier: 4,
-    version: 'v1',
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
-});
-/**
- * Versioned health endpoint
- * Purpose: Machine health check for orchestration & monitoring
- */
-app.get('/v1/health', (req, res) => {
-  res.json({
-    service: 'SeekReap',
-    tier: 4,
-    version: 'v1',
-    status: 'healthy',
+    version: "v1",
+    status: "healthy",
     timestamp: new Date().toISOString()
   });
 });
 
+// Decision endpoint
+app.post('/v1/decision', (req, res) => {
+  const { input } = req.body;
+
+  if (!input) {
+    return res.status(400).json({
+      service: "SeekReap",
+      tier: 4,
+      version: "v1",
+      status: "error",
+      message: "Missing input field in request body",
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Placeholder logic for decision processing
+  const decision = input.length % 2 === 0 ? "approve" : "reject";
+
+  res.json({
+    service: "SeekReap",
+    tier: 4,
+    version: "v1",
+    status: "success",
+    input,
+    decision,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Start server
 app.listen(PORT, HOST, () => {
-  console.log(`Tier-4 API listening on ${HOST}:${PORT}`);
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
