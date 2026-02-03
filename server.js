@@ -1,19 +1,20 @@
 const express = require('express');
-
 const app = express();
 
-// Render provides PORT automatically
+/**
+ * Render provides PORT dynamically.
+ * Binding to 0.0.0.0 is required.
+ */
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
 
-// --- Middleware ---
 app.use(express.json());
 
-// --- Health check (required for Render & monitoring) ---
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-// --- Root (temporary informational endpoint) ---
+/**
+ * Root endpoint
+ * Purpose: Render health + human sanity check
+ * DO NOT REMOVE
+ */
 app.get('/', (req, res) => {
   res.json({
     service: 'SeekReap Tier-4 API',
@@ -21,16 +22,20 @@ app.get('/', (req, res) => {
   });
 });
 
-// --- Placeholder: 3-question flow entry point ---
-app.post('/decision', (req, res) => {
-  // Later: validate answers, route logic, scoring
+/**
+ * Versioned health endpoint
+ * Purpose: Machine health check for orchestration & monitoring
+ */
+app.get('/v1/health', (req, res) => {
   res.json({
-    message: 'Decision endpoint stub',
-    received: req.body
+    service: 'SeekReap',
+    tier: 4,
+    version: 'v1',
+    status: 'healthy',
+    timestamp: new Date().toISOString()
   });
 });
 
-// --- Start server ---
-app.listen(PORT, () => {
-  console.log(`Tier-4 API listening on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Tier-4 API listening on ${HOST}:${PORT}`);
 });
