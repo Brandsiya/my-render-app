@@ -9,3 +9,18 @@ node_modules/
 
 # OS / editor noise
 .DS_Store
+# Runtime artifacts
+tier4_logs.db
+
+# Backup files
+*.bak
+
+# Local scripts / hacks
+keep_alive.sh
+
+# Junk / accidental files
+hehshhshw
+test
+y
+yes
+test_tuer4_decision.sh

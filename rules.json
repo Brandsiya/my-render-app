@@ -1,7 +1,6 @@
 {
-  "approve": ["approve", "ok", "yes"],
-  "reject": ["reject", "no", "deny"],
-  "pending": ["hold", "wait", "review"],
-  "escalate": ["urgent", "immediate", "critical"],
-  "review_length": 50
+    "approve": ["approve", "ok", "yes"],
+    "reject": ["reject", "no", "deny"],
+    "pending": ["hold", "pending", "wait"],
+    "escalate": ["urgent", "escalate", "immediate"]
 }
