@@ -1,89 +1,86 @@
-// server.js - Tier-4 v3
 const express = require('express');
 const bodyParser = require('body-parser');
+const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const API_KEY = process.env.TIER4_API_KEY || "default_key";  // simple API key auth
 
-// Middleware
 app.use(bodyParser.json());
 
-// In-memory logs
-let logs = [];
+// --- Setup SQLite Database for Persistent Logs ---
+const db = new sqlite3.Database('./tier4_logs.db', (err) => {
+  if (err) console.error('DB error:', err.message);
+  else console.log('SQLite DB connected');
+});
 
-// Decision logic function
-function makeDecision(input) {
-  const lower = input.toLowerCase();
-  if (lower.includes('approve')) return 'approved';
-  if (lower.includes('reject')) return 'rejected';
-  if (lower.includes('hold')) return 'pending';
-  if (lower.includes('urgent')) return 'escalate';
-  if (input.length > 50) return 'review'; // v3 logic for long inputs
-  return 'pending';
+db.run(`CREATE TABLE IF NOT EXISTS logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  input TEXT,
+  decision TEXT,
+  timestamp TEXT
+)`);
+
+// --- Middleware: API Key Auth ---
+app.use((req, res, next) => {
+  const key = req.headers['x-api-key'];
+  if (!key || key !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized: invalid API key' });
+  }
+  next();
+});
+
+// --- Health Check ---
+app.get('/health', (req, res) => {
+  res.json({ service: "SeekReap", tier: 4, status: "healthy", timestamp: new Date().toISOString() });
+});
+
+// --- Decision Rules (Configurable) ---
+const rules = [
+  { keyword: "approve", decision: "approved" },
+  { keyword: "reject", decision: "rejected" },
+  { keyword: "hold", decision: "pending" },
+  { keyword: "urgent", decision: "escalate" },
+];
+
+function decide(input) {
+  if (input.length > 50) return "review";  // long input triggers review
+  for (const rule of rules) {
+    if (input.toLowerCase().includes(rule.keyword)) return rule.decision;
+  }
+  return "pending"; // default
 }
 
-// Health endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    service: 'SeekReap',
-    tier: 4,
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Single decision endpoint
+// --- Single Decision Endpoint ---
 app.post('/v1/decision', (req, res) => {
   const { input } = req.body;
-  const decision = makeDecision(input);
-  const entry = {
-    service: 'SeekReap',
-    tier: 4,
-    version: 'v3',
-    status: 'success',
-    input,
-    decision,
-    timestamp: new Date().toISOString(),
-  };
-  logs.push(entry);
-  res.json(entry);
+  const decision = decide(input);
+  const timestamp = new Date().toISOString();
+
+  db.run(`INSERT INTO logs(input, decision, timestamp) VALUES(?,?,?)`, [input, decision, timestamp]);
+
+  res.json({ service: "SeekReap", tier: 4, version: "v4", status: "success", input, decision, timestamp });
 });
 
-// Batch decision endpoint
+// --- Batch Decision Endpoint ---
 app.post('/v1/decision/batch', (req, res) => {
   const { inputs } = req.body;
-  const results = inputs.map((input) => {
-    const decision = makeDecision(input);
-    const entry = {
-      input,
-      decision,
-      timestamp: new Date().toISOString(),
-    };
-    logs.push(entry);
-    return entry;
+  const results = inputs.map(input => {
+    const decision = decide(input);
+    const timestamp = new Date().toISOString();
+    db.run(`INSERT INTO logs(input, decision, timestamp) VALUES(?,?,?)`, [input, decision, timestamp]);
+    return { input, decision, timestamp };
   });
-  res.json({
-    service: 'SeekReap',
-    tier: 4,
-    version: 'v3',
-    status: 'success',
-    results,
-  });
+  res.json({ service: "SeekReap", tier: 4, version: "v4", status: "success", results });
 });
 
-// Logs endpoint
+// --- Logs Endpoint ---
 app.get('/v1/logs', (req, res) => {
-  res.json({
-    service: 'SeekReap',
-    tier: 4,
-    version: 'v3',
-    status: 'success',
-    count: logs.length,
-    logs,
+  db.all("SELECT * FROM logs ORDER BY id DESC", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ service: "SeekReap", tier: 4, version: "v4", status: "success", count: rows.length, logs: rows });
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-});
+
+app.listen(PORT, () => console.log(`Server running on http://0.0.0.0:${PORT}`));

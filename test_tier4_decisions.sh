@@ -1,13 +1,4 @@
-# paste above content
-nano test_tier4_batch.sh
-# paste above content
-chmod +x test_tier4_decisions.sh test_tier4_batch.sh
-node server.js &  # start the server
-export TIER4_URL="http://localhost:3000"
-./test_tier4_decisions.sh
-./test_tier4_batch.sh#!/bin/bash
-# Test single decision endpoint for Tier-4 v3
-
+#!/bin/bash
 echo "=== Testing Tier-4 Decision Endpoint ==="
 
 inputs=(
@@ -22,6 +13,7 @@ for input in "${inputs[@]}"; do
   echo "Input: $input"
   response=$(curl -s -X POST "$TIER4_URL/v1/decision" \
     -H "Content-Type: application/json" \
+    -H "x-api-key: default_key" \
     -d "{\"input\":\"$input\"}")
   echo "Response: $response"
   echo "-----------------------------------"
